@@ -3,7 +3,7 @@ import requests
 import base64
 from configparser import ConfigParser
 import sys
-
+from charset_normalizer import md__mypyc
 
 config = ConfigParser()
 config.read('config.ini')
