@@ -3,6 +3,8 @@ import requests
 import base64
 from configparser import ConfigParser
 from sys import exit
+from os import path
+import hashlib
 from charset_normalizer import md__mypyc ## Odblokowac na windowsie
 
 
@@ -10,6 +12,16 @@ config = ConfigParser()
 config.read('config.ini')
 
 api_key = config.get('Config', 'api')
+
+
+def mal_info(av_engines_json, i_vendor):	
+	malicious = json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['malicious'], indent=4)
+	print('\n Wykrycia :')
+	print('Zlosliwe : ', malicious)
+	print(f'Podejrzane : ', json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['suspicious'], indent=4))
+	print(f'Nieszkodliwe : ', json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['harmless'], indent=4))
+	print(f'Ilosc silnikow skanujacych (vendorow) : {i_vendor}')
+	print(f'\n {malicious}/{i_vendor} vendorow uwaza te strone za niebezpieczna')
 
 
 def vendor_count(response):
@@ -24,6 +36,53 @@ def vendor_count(response):
 		i_x += 1
 		
 	print(f'\n Plik uznawany jest za niebezpieczny przez {x}/{i_x} vendorow. \n')
+
+
+def file_upload(api_key):
+	file_path = input('podaj sciezke do pliku : ')
+	file_size = path.getsize(file_path)
+	print(file_size)
+		
+	if file_size <= 33_554_431:
+		print(file_size)
+		print('file_size <= 33_554_431')
+		url = "https://www.virustotal.com/api/v3/files"
+		files = {"file": open(file_path, "rb")}
+		#payload = {"password": password}
+		headers = {
+		    "accept": "application/json",
+		    "x-apikey": api_key
+		}
+
+		response = requests.post(url, files=files, headers=headers)
+
+		print(response.text) 
+		upload_file_hash = hash_md5(file_path)
+		print(upload_file_hash)
+	
+
+	elif file_size <= 681_574_400:
+		url = "https://www.virustotal.com/api/v3/files/upload_url"
+		headers = {
+		    "accept": "application/json",
+		    "x-apikey": api_key
+		}
+
+		response = requests.get(url, headers=headers)
+
+		print(response.text)
+		upload_file_hash = hash_md5(file_path)
+		print(upload_file_hash)	
+		print(file_size)
+		print('<= 681_574_400')
+
+	elif file_size >= 681_574_400:
+		print("Plik jest za duzy >= 650 MB")
+	
+	else:
+		print('Sprawdz czy sciezka jest poprwana')	
+
+		
 
 
 def mal_ven_count(response):
@@ -55,7 +114,8 @@ def file_hash_vt(api_key):
 	      }
 	response = requests.get(url, headers=headers)      
 	try:	
-		vendor_count(response)	
+		av_engines_json, i_vendor = mal_ven_count(response)
+		mal_info(av_engines_json, i_vendor)
 
 	except:
 		print('Nie znaleziono hashu albo nie masz internetu \n')
@@ -95,14 +155,7 @@ def website_info(api_key):
 	response = requests.get(url, headers=headers)
 	try:	
 		av_engines_json, i_vendor = mal_ven_count(response)
-
-		malicious = json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['malicious'], indent=4)
-		print('\n Wykrycia :')
-		print('Zlosliwe : ', malicious)
-		print(f'Podejrzane : ', json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['suspicious'], indent=4))
-		print(f'Nieszkodliwe : ', json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['harmless'], indent=4))
-		print(f'Ilosc silnikow skanujacych (vendorow) : {i_vendor}')
-		print(f'\n {malicious}/{i_vendor} vendorow uwaza te strone za niebezpieczna')
+		mal_info(av_engines_json, i_vendor)
 	except:
 		print('Strona mogla jeszcze nie byc skanowana, sprobuj pierw przeskanowac strone.')
 	finally:
@@ -119,24 +172,32 @@ def ip_addr_vt(api_key):
 	response = requests.get(url, headers=headers)
 	try:	
 		av_engines_json, i_vendor = mal_ven_count(response)
-
-		malicious = json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['malicious'], indent=4)
-		print('\n Wykrycia :')
+		mal_info(av_engines_json, i_vendor)
+		
 		info = json.dumps(av_engines_json['data']['attributes']['as_owner'], indent=4)
 		print('Nazwa : ', info)
 		country = json.dumps(av_engines_json['data']['attributes']['country'])
 		print('Kraj pochodzenia : ', country)
-		print('Zlosliwe : ', malicious)
-		print(f'Podejrzane : ', json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['suspicious'], indent=4))
-		print(f'Nieszkodliwe : ', json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['harmless'], indent=4))
-		print(f'Ilosc silnikow skanujacych (vendorow) : {i_vendor}')
-		print(f'\n {malicious}/{i_vendor} vendorow uwaza ten adres IP za niebezpieczny')
 
 	except:
 		print('Sprawdz czy wpisales poprawny adres ip.')
 
 	finally:
 		pass
+
+
+def hash_md5(file_path):
+	BUF_SIZE = 65536   #64kb 
+	md5 = hashlib.md5()
+	
+	with open(file_path, 'rb') as f:
+	    while True:
+	        data = f.read(BUF_SIZE)
+	        if not data:
+	            break
+	        md5.update(data)
+
+	return md5.hexdigest()        
 
 
 def main():
@@ -146,6 +207,7 @@ def main():
 		print('2. Skanuj strone')
 		print('3. Sprawdz informacje na temat hashu pliku')
 		print('4. Sprawdz adres IP')
+		print('5. Weryfikacja pliku')
 		print('Aby wyjsc wcisnij "q"')
 		print('---------------------------------------------------')
 		answer = input('Wybierz opcje : ')
@@ -156,7 +218,9 @@ def main():
 		elif answer == '3':
 			file_hash_vt(api_key)
 		elif answer == '4':
-			ip_addr_vt(api_key)	
+			ip_addr_vt(api_key)
+		elif answer == '5':
+			file_upload(api_key)		
 		elif answer == 'q':
 			break
 			exit(0)
