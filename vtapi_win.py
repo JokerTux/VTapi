@@ -3,13 +3,47 @@ import requests
 import base64
 from configparser import ConfigParser
 from sys import exit
-#from charset_normalizer import md__mypyc ## Odblokowac na windowsie
+from charset_normalizer import md__mypyc ## Odblokowac na windowsie
 
 
 config = ConfigParser()
 config.read('config.ini')
 
 api_key = config.get('Config', 'api')
+
+
+def vendor_count(response):
+	json_resp = str(response.text)
+	json_resp = json.loads(json_resp)
+	x = json.dumps(json_resp['data']['attributes']['last_analysis_stats']['malicious'], indent=4)
+	vendors = json.dumps(json_resp['data']['attributes']['last_analysis_results'])
+	vendors = json.loads(vendors)
+	i_x = 0
+
+	for number in vendors:
+		i_x += 1
+		
+	print(f'\n Plik uznawany jest za niebezpieczny przez {x}/{i_x} vendorow. \n')
+
+
+def mal_ven_count(response):
+	av_engines_json = response.text
+	av_engines_json = json.loads(av_engines_json)
+	av_engines = json.dumps(av_engines_json['data']['attributes']['last_analysis_results'], indent=4)
+	av_engines_load_json = json.loads(av_engines)
+
+	print('\n Adres IP zostal uznany przez nastepujacych vendorow za zlosliwy :')
+	i_vendor = 0
+	for av_vendor in av_engines_load_json:
+		i_vendor += 1
+		vendor_info = json.dumps(av_engines_load_json[av_vendor]['category'])
+		vendor_info = str(vendor_info)
+		danger_list = 'malicious'
+		if danger_list in vendor_info:
+			print(av_vendor, ' :  ', vendor_info)
+		continue
+
+	return(av_engines_json, i_vendor)	
 
 
 def file_hash_vt(api_key):
@@ -19,20 +53,9 @@ def file_hash_vt(api_key):
 	        'X-Apikey': api_key,
 	        'Accept-Encoding': 'application/json',
 	      }
+	response = requests.get(url, headers=headers)      
 	try:	
-		response = requests.get(url, headers=headers)
-		json_resp = str(response.text)
-		json_resp = json.loads(json_resp)
-		
-		x = json.dumps(json_resp['data']['attributes']['last_analysis_stats']['malicious'], indent=4)
-		vendors = json.dumps(json_resp['data']['attributes']['last_analysis_results'])
-		vendors = json.loads(vendors)
-		i_x = 0
-
-		for number in vendors:
-			i_x += 1
-		
-		print(f'\n Plik uznawany jest za niebezpieczny przez {x}/{i_x} vendorow. \n')	
+		vendor_count(response)	
 
 	except:
 		print('Nie znaleziono hashu albo nie masz internetu \n')
@@ -55,8 +78,8 @@ def website_vt(api_key):
 	response = requests.post(url, data=payload, headers=headers)
 
 	if response:
-		print('Skan zaczety... poczekaj chwile i sprawdz wynik w "Sprawdz informacje na temat podejrzanej strony"')
-	else:
+		print('\n Skan zaczety... poczekaj chwile i sprawdz wynik w "Sprawdz informacje na temat podejrzanej strony"')
+	else:	
 		print('Cos poszlo nie tak... Upewnij sie czy wprowadziles poprawny URL \n')	
 
 
@@ -69,32 +92,17 @@ def website_info(api_key):
 	    "accept": "application/json",
 	    "x-apikey": api_key
 	}
+	response = requests.get(url, headers=headers)
+	try:	
+		av_engines_json, i_vendor = mal_ven_count(response)
 
-	try:
-		response = requests.get(url, headers=headers)
-		av_engines_json = response.text
-		av_engines_json = json.loads(av_engines_json)
-		av_engines = json.dumps(av_engines_json['data']['attributes']['last_analysis_results'], indent=4)
-		av_engines_load_json = json.loads(av_engines)
-
-		print('\n Strona zostala uznana przez nastepujacych vendorow za zlosliwa :')
-		i_vendor = 0
-		for av_vendor in av_engines_load_json:
-			i_vendor += 1
-			vendor_info = json.dumps(av_engines_load_json[av_vendor]['category'])
-			vendor_info = str(vendor_info)
-			danger_list = 'malicious'
-			if danger_list in vendor_info:
-				print(av_vendor, ' :  ', vendor_info)
-			else:
-				pass
 		malicious = json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['malicious'], indent=4)
 		print('\n Wykrycia :')
 		print('Zlosliwe : ', malicious)
 		print(f'Podejrzane : ', json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['suspicious'], indent=4))
 		print(f'Nieszkodliwe : ', json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['harmless'], indent=4))
 		print(f'Ilosc silnikow skanujacych (vendorow) : {i_vendor}')
-		print(f'\n {malicious}/{i_vendor} vendorow uwaza te strone za niebezpieczna \n')
+		print(f'\n {malicious}/{i_vendor} vendorow uwaza te strone za niebezpieczna')
 	except:
 		print('Strona mogla jeszcze nie byc skanowana, sprobuj pierw przeskanowac strone.')
 	finally:
@@ -108,26 +116,9 @@ def ip_addr_vt(api_key):
 	    "accept": "application/json",
 	    "x-apikey": api_key
 	}
-
+	response = requests.get(url, headers=headers)
 	try:	
-		response = requests.get(url, headers=headers)
-		av_engines_json = response.text
-		av_engines_json = json.loads(av_engines_json)
-		av_engines = json.dumps(av_engines_json['data']['attributes']['last_analysis_results'], indent=4)
-		av_engines_load_json = json.loads(av_engines)
-
-		print('\n Adres IP zostal uznany przez nastepujacych vendorow za zlosliwy :')
-		i_vendor = 0
-		for av_vendor in av_engines_load_json:
-			i_vendor += 1
-			vendor_info = json.dumps(av_engines_load_json[av_vendor]['category'])
-			vendor_info = str(vendor_info)
-			danger_list = 'malicious'
-			if danger_list in vendor_info:
-				print(av_vendor, ' :  ', vendor_info)
-			else:
-				pass
-
+		av_engines_json, i_vendor = mal_ven_count(response)
 
 		malicious = json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['malicious'], indent=4)
 		print('\n Wykrycia :')
@@ -139,7 +130,7 @@ def ip_addr_vt(api_key):
 		print(f'Podejrzane : ', json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['suspicious'], indent=4))
 		print(f'Nieszkodliwe : ', json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['harmless'], indent=4))
 		print(f'Ilosc silnikow skanujacych (vendorow) : {i_vendor}')
-		print(f'\n {malicious}/{i_vendor} vendorow uwaza ten adres IP za niebezpieczny \n')
+		print(f'\n {malicious}/{i_vendor} vendorow uwaza ten adres IP za niebezpieczny')
 
 	except:
 		print('Sprawdz czy wpisales poprawny adres ip.')
@@ -148,8 +139,7 @@ def ip_addr_vt(api_key):
 		pass
 
 
-if __name__ == '__main__':
-
+def main():
 	while True:
 		print('---------------------------------------------------')
 		print('1. Sprawdz informacje na temat podejrzanej strony')
@@ -171,6 +161,8 @@ if __name__ == '__main__':
 			break
 			exit(0)
 		else:
-			print('zly wybor, aby wyjsc wcisnij "q"')		
-	
+			print('zly wybor, aby wyjsc wcisnij "q"')
 
+
+if __name__ == '__main__':
+	main()
