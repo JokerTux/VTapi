@@ -83,8 +83,6 @@ def file_upload(api_key):
 		print('Sprawdz czy sciezka jest poprwana')	
 
 		
-
-
 def mal_ven_count(response):
 	av_engines_json = response.text
 	av_engines_json = json.loads(av_engines_json)
