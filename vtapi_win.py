@@ -42,7 +42,8 @@ def file_upload(api_key):
 	file_path = input('podaj sciezke do pliku : ')
 	file_size = path.getsize(file_path)
 	print(file_size)
-		
+	
+	#32MB
 	if file_size <= 33_554_431:
 		print(file_size)
 		print('file_size <= 33_554_431')
@@ -60,8 +61,8 @@ def file_upload(api_key):
 		upload_file_hash = hash_md5(file_path)
 		print(upload_file_hash)
 	
-
-	elif file_size <= 681_574_400:
+	#<= 650 MB
+	elif file_size <= 681_574_399:
 		url = "https://www.virustotal.com/api/v3/files/upload_url"
 		headers = {
 		    "accept": "application/json",
@@ -75,7 +76,8 @@ def file_upload(api_key):
 		print(upload_file_hash)	
 		print(file_size)
 		print('<= 681_574_400')
-
+	
+	#>= 650MB
 	elif file_size >= 681_574_400:
 		print("Plik jest za duzy >= 650 MB")
 	
