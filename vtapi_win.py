@@ -13,6 +13,12 @@ config.read('config.ini')
 
 api_key = config.get('Config', 'api')
 
+def analysis_check(response):
+	analysis_json = response.text
+	analysis_json = json.loads(analysis_json)
+	analysis_get = json.dumps(analysis_json['data']['type'])
+	print(f'\n {analysis_get}')
+
 
 def mal_info(av_engines_json, i_vendor):	
 	malicious = json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['malicious'], indent=4)
@@ -41,12 +47,9 @@ def vendor_count(response):
 def file_upload(api_key):
 	file_path = input('podaj sciezke do pliku : ')
 	file_size = path.getsize(file_path)
-	print(file_size)
-	
-	#32MB
+	print(f'{file_size} [B]')
+		
 	if file_size <= 33_554_431:
-		print(file_size)
-		print('file_size <= 33_554_431')
 		url = "https://www.virustotal.com/api/v3/files"
 		files = {"file": open(file_path, "rb")}
 		#payload = {"password": password}
@@ -57,11 +60,12 @@ def file_upload(api_key):
 
 		response = requests.post(url, files=files, headers=headers)
 
-		print(response.text) 
+		analysis_check(response)
+		#print(response.text) 
 		upload_file_hash = hash_md5(file_path)
-		print(upload_file_hash)
+		print(f'\n Poczekaj 2 min zanim virustotal przezeskanuje plik.\n wygenerowany hash pliku : {upload_file_hash}')
 	
-	#<= 650 MB
+
 	elif file_size <= 681_574_399:
 		url = "https://www.virustotal.com/api/v3/files/upload_url"
 		headers = {
@@ -70,21 +74,34 @@ def file_upload(api_key):
 		}
 
 		response = requests.get(url, headers=headers)
+		
+		json_resp_file = str(response.text)
+		json_resp_file = json.loads(json_resp_file)
+		
+		vt_url = json.dumps(json_resp_file['data'])
+		vt_url = vt_url.strip('"')
+		
+		files = {"file": open(file_path, "rb")}
 
-		print(response.text)
+		response_file = requests.post(vt_url, files=files, headers=headers)
+		
+		analysis_json = response_file.text
+		analysis_json = json.loads(analysis_json)
+		analysis_get = json.dumps(analysis_json['data']['type'])
+		print(f'\n {analysis_get}')
+
 		upload_file_hash = hash_md5(file_path)
-		print(upload_file_hash)	
-		print(file_size)
-		print('<= 681_574_400')
-	
-	#>= 650MB
+		print(f'\n Poczekaj 2 min zanim virustotal przezeskanuje plik.\n wygenerowany hash pliku : {upload_file_hash}')	
+
 	elif file_size >= 681_574_400:
 		print("Plik jest za duzy >= 650 MB")
+		upload_file_hash = hash_md5(file_path)
+		print(f'\n Wygenerowany hash pliku : {upload_file_hash}')
 	
 	else:
 		print('Sprawdz czy sciezka jest poprwana')	
 
-		
+
 def mal_ven_count(response):
 	av_engines_json = response.text
 	av_engines_json = json.loads(av_engines_json)
@@ -138,6 +155,7 @@ def website_vt(api_key):
 	response = requests.post(url, data=payload, headers=headers)
 
 	if response:
+		analysis_check(response)
 		print('\n Skan zaczety... poczekaj chwile i sprawdz wynik w "Sprawdz informacje na temat podejrzanej strony"')
 	else:	
 		print('Cos poszlo nie tak... Upewnij sie czy wprowadziles poprawny URL \n')	
@@ -187,7 +205,7 @@ def ip_addr_vt(api_key):
 
 
 def hash_md5(file_path):
-	BUF_SIZE = 65536   #64kb 
+	BUF_SIZE = 65536   #64kB 
 	md5 = hashlib.md5()
 	
 	with open(file_path, 'rb') as f:
