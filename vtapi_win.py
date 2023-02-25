@@ -5,6 +5,7 @@ from configparser import ConfigParser
 from sys import exit
 from os import path
 import hashlib
+from datetime import datetime
 from charset_normalizer import md__mypyc ## Odblokowac na windowsie
 
 
@@ -46,6 +47,7 @@ def vendor_count(response):
 
 def file_upload(api_key):
 	file_path = input('podaj sciezke do pliku : ')
+	file_path = file_path.strip('"')
 	file_size = path.getsize(file_path)
 	print(f'{file_size} [B]')
 		
@@ -102,13 +104,13 @@ def file_upload(api_key):
 		print('Sprawdz czy sciezka jest poprwana')	
 
 
-def mal_ven_count(response):
+def mal_ven_count(response, form_ver):
 	av_engines_json = response.text
 	av_engines_json = json.loads(av_engines_json)
 	av_engines = json.dumps(av_engines_json['data']['attributes']['last_analysis_results'], indent=4)
 	av_engines_load_json = json.loads(av_engines)
 
-	print('\n Adres IP zostal uznany przez nastepujacych vendorow za zlosliwy :')
+	print(f'\n Podany {form_ver} zostal uznany przez nastepujacych vendorow za zlosliwy :')
 	i_vendor = 0
 	for av_vendor in av_engines_load_json:
 		i_vendor += 1
@@ -123,6 +125,7 @@ def mal_ven_count(response):
 
 
 def file_hash_vt(api_key):
+	form_ver = 'hash'
 	file_hash = input("Podaj hash pliku : ")
 	url = f"https://www.virustotal.com/api/v3/files/{file_hash}"
 	headers = {
@@ -131,8 +134,13 @@ def file_hash_vt(api_key):
 	      }
 	response = requests.get(url, headers=headers)      
 	try:	
-		av_engines_json, i_vendor = mal_ven_count(response)
+		av_engines_json, i_vendor = mal_ven_count(response, form_ver)
 		mal_info(av_engines_json, i_vendor)
+		file_name_vt = json.dumps(av_engines_json['data']['attributes']['meaningful_name'])
+		file_name_vt = str(file_name_vt)	
+		if file_name_vt:
+			print(f'Nazwa pliku : {file_name_vt}')
+		pass
 
 	except:
 		print('Nie znaleziono hashu albo nie masz internetu \n')
@@ -162,6 +170,7 @@ def website_vt(api_key):
 
 
 def website_info(api_key):
+	form_ver = 'URL'
 	website = input("Podaj strone : ")
 	url_id = base64.urlsafe_b64encode(f"{website}".encode()).decode().strip("=")
 	url = f"https://www.virustotal.com/api/v3/urls/{url_id}"
@@ -172,14 +181,26 @@ def website_info(api_key):
 	}
 	response = requests.get(url, headers=headers)
 	try:	
-		av_engines_json, i_vendor = mal_ven_count(response)
+		av_engines_json, i_vendor = mal_ven_count(response, form_ver)
 		mal_info(av_engines_json, i_vendor)
+		##Timestamp
+		last_analysis_timestamp = json.dumps(av_engines_json['data']['attributes']['last_analysis_date'])
+		if last_analysis_timestamp:
+			last_analysis_timestamp = int(last_analysis_timestamp)
+			last_analysis_seconds = last_analysis_timestamp / 1000
+			last_analysis_date = datetime.fromtimestamp(last_analysis_timestamp)
+			print(f'\n Ostatnio sprawdzane : {last_analysis_date}')
+		pass
+
 	except:
 		print('Strona mogla jeszcze nie byc skanowana, sprobuj pierw przeskanowac strone.')
+	
 	finally:
 		print('\n')		
 
+
 def ip_addr_vt(api_key):
+	form_ver = 'IP'
 	addr_ip = input("Podaj adres IP : ")
 	url = f"https://www.virustotal.com/api/v3/ip_addresses/{addr_ip}"
 
@@ -189,13 +210,20 @@ def ip_addr_vt(api_key):
 	}
 	response = requests.get(url, headers=headers)
 	try:	
-		av_engines_json, i_vendor = mal_ven_count(response)
+		av_engines_json, i_vendor = mal_ven_count(response, form_ver)
 		mal_info(av_engines_json, i_vendor)
 		
 		info = json.dumps(av_engines_json['data']['attributes']['as_owner'], indent=4)
-		print('Nazwa : ', info)
+		info = str(info)
+		if info:
+			print('Nazwa : ', info)
+		pass
+			
 		country = json.dumps(av_engines_json['data']['attributes']['country'])
-		print('Kraj pochodzenia : ', country)
+		country = str(country)
+		if country:			
+			print('Kraj pochodzenia : ', country)
+		pass	
 
 	except:
 		print('Sprawdz czy wpisales poprawny adres ip.')
