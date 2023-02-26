@@ -6,7 +6,7 @@ from sys import exit
 from os import path
 import hashlib
 from datetime import datetime
-from charset_normalizer import md__mypyc ## Odblokowac na windowsie
+from charset_normalizer import md__mypyc 
 
 
 config = ConfigParser()
@@ -14,9 +14,19 @@ config.read('config.ini')
 
 api_key = config.get('Config', 'api')
 
+
+def error_check(analysis_json):
+	alert = False
+	if json.dumps(analysis_json['error']):
+		alert = True
+		error_vt = json.dumps(analysis_json['error']['code'])
+		print(f'Error : {error_vt}')
+
+
 def analysis_check(response):
 	analysis_json = response.text
 	analysis_json = json.loads(analysis_json)
+	alert = error_check(analysis_json)
 	analysis_get = json.dumps(analysis_json['data']['type'])
 	print(f'\n {analysis_get}')
 
@@ -47,7 +57,8 @@ def vendor_count(response):
 
 def file_upload(api_key):
 	file_path = input('podaj sciezke do pliku : ')
-	file_path = file_path.strip('"')
+	### \x22 = ", \x27 = '
+	file_path = file_path.strip('\x22\x27')
 	file_size = path.getsize(file_path)
 	print(f'{file_size} [B]')
 		
@@ -67,7 +78,6 @@ def file_upload(api_key):
 		upload_file_hash = hash_md5(file_path)
 		print(f'\n Poczekaj 2 min zanim virustotal przezeskanuje plik.\n wygenerowany hash pliku : {upload_file_hash}')
 	
-
 	elif file_size <= 681_574_399:
 		url = "https://www.virustotal.com/api/v3/files/upload_url"
 		headers = {
@@ -107,6 +117,7 @@ def file_upload(api_key):
 def mal_ven_count(response, form_ver):
 	av_engines_json = response.text
 	av_engines_json = json.loads(av_engines_json)
+	error_check(av_engines_json)
 	av_engines = json.dumps(av_engines_json['data']['attributes']['last_analysis_results'], indent=4)
 	av_engines_load_json = json.loads(av_engines)
 
@@ -189,7 +200,7 @@ def website_info(api_key):
 			last_analysis_timestamp = int(last_analysis_timestamp)
 			last_analysis_seconds = last_analysis_timestamp / 1000
 			last_analysis_date = datetime.fromtimestamp(last_analysis_timestamp)
-			print(f'\n Ostatnio sprawdzane : {last_analysis_date}')
+			print(f'\n Ostatnio sprawdzane : {last_analysis_date}')	
 		pass
 
 	except:
