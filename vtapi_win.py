@@ -16,9 +16,15 @@ api_key = config.get('Config', 'api')
 
 
 def error_check(analysis_json):
-	if json.dumps(analysis_json['error']):
-		error_vt = json.dumps(analysis_json['error']['code'])
-		print(f'Error : {error_vt}')
+	try:
+		if json.dumps(analysis_json['error']):
+			error_vt = json.dumps(analysis_json['error']['code'])
+			print(f'Error : {error_vt}')
+	except:
+		print('Brak bledow')		
+
+	finally:
+		pass	
 
 
 def analysis_check(response):
