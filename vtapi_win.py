@@ -16,7 +16,6 @@ api_key = config.get('Config', 'api')
 
 
 def error_check(analysis_json):
-	alert = False
 	if json.dumps(analysis_json['error']):
 		alert = True
 		error_vt = json.dumps(analysis_json['error']['code'])
@@ -26,7 +25,7 @@ def error_check(analysis_json):
 def analysis_check(response):
 	analysis_json = response.text
 	analysis_json = json.loads(analysis_json)
-	alert = error_check(analysis_json)
+	error_check(analysis_json)
 	analysis_get = json.dumps(analysis_json['data']['type'])
 	print(f'\n {analysis_get}')
 
