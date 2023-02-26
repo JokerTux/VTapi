@@ -17,7 +17,6 @@ api_key = config.get('Config', 'api')
 
 def error_check(analysis_json):
 	if json.dumps(analysis_json['error']):
-		alert = True
 		error_vt = json.dumps(analysis_json['error']['code'])
 		print(f'Error : {error_vt}')
 
