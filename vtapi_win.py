@@ -51,8 +51,8 @@ def vendor_count(response):
 	x = json.dumps(json_resp['data']['attributes']['last_analysis_stats']['malicious'], indent=4)
 	vendors = json.dumps(json_resp['data']['attributes']['last_analysis_results'])
 	vendors = json.loads(vendors)
-	i_x = 0
 
+	i_x = 0
 	for number in vendors:
 		i_x += 1
 		
@@ -198,7 +198,7 @@ def website_info(api_key):
 	try:	
 		av_engines_json, i_vendor = mal_ven_count(response, form_ver)
 		mal_info(av_engines_json, i_vendor)
-		##Timestamp
+		###Timestamp
 		last_analysis_timestamp = json.dumps(av_engines_json['data']['attributes']['last_analysis_date'])
 		if last_analysis_timestamp:
 			last_analysis_timestamp = int(last_analysis_timestamp)
@@ -248,12 +248,12 @@ def ip_addr_vt(api_key):
 
 
 def hash_md5(file_path):
-	BUF_SIZE = 65536   #64kB 
+	# BUF_SIZE = 65536   #64kB 
 	md5 = hashlib.md5()
 	
 	with open(file_path, 'rb') as f:
 	    while True:
-	        data = f.read(BUF_SIZE)
+	        data = f.read()
 	        if not data:
 	            break
 	        md5.update(data)
