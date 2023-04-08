@@ -43,7 +43,7 @@ def mal_info(av_engines_json, i_vendor, form_ver):
 	print(f'Podejrzane : ', json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['suspicious'], indent=4))
 	print(f'Nieszkodliwe : ', json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['harmless'], indent=4))
 	print(f'Ilosc silnikow skanujacych (vendorow) : {i_vendor}')
-	print(f'\n {malicious}/{i_vendor} vendorow uwaza ten {form_ver} za niebezpieczna')
+	print(f'\n {malicious}/{i_vendor} vendorow uwaza ten {form_ver} za niebezpieczny ')
 
 
 def vendor_count(response):
@@ -167,11 +167,9 @@ def file_hash_vt(api_key):
 
 def website_vt(api_key):
 	website = input('Podaj strone do sprawdzenia : ')
-	website = repr(website).strip('"')
 	url = "https://www.virustotal.com/api/v3/urls"
 
 	payload = f"url={website}"
-	breakpoint()
 	headers = {
 	    "accept": "application/json",
 	    "x-apikey": api_key,
@@ -190,7 +188,6 @@ def website_vt(api_key):
 def website_info(api_key):
 	form_ver = 'URL'
 	website = input("Podaj strone : ")
-	website = repr(website).strip('"')
 	url_id = base64.urlsafe_b64encode(f"{website}".encode()).decode().strip("=")
 	url = f"https://www.virustotal.com/api/v3/urls/{url_id}"
 	headers = {
