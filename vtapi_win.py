@@ -1,6 +1,7 @@
 import json
 import requests
 import base64
+import time
 from configparser import ConfigParser
 from sys import exit
 from os import path
@@ -35,14 +36,14 @@ def analysis_check(response):
 	print(f'\n {analysis_get}')
 
 
-def mal_info(av_engines_json, i_vendor):	
+def mal_info(av_engines_json, i_vendor, form_ver):	
 	malicious = json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['malicious'], indent=4)
 	print('\n Wykrycia :')
 	print('Zlosliwe : ', malicious)
 	print(f'Podejrzane : ', json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['suspicious'], indent=4))
 	print(f'Nieszkodliwe : ', json.dumps(av_engines_json['data']['attributes']['last_analysis_stats']['harmless'], indent=4))
 	print(f'Ilosc silnikow skanujacych (vendorow) : {i_vendor}')
-	print(f'\n {malicious}/{i_vendor} vendorow uwaza te strone za niebezpieczna')
+	print(f'\n {malicious}/{i_vendor} vendorow uwaza ten {form_ver} za niebezpieczna')
 
 
 def vendor_count(response):
@@ -150,7 +151,7 @@ def file_hash_vt(api_key):
 	response = requests.get(url, headers=headers)      
 	try:	
 		av_engines_json, i_vendor = mal_ven_count(response, form_ver)
-		mal_info(av_engines_json, i_vendor)
+		mal_info(av_engines_json, i_vendor, form_ver)
 		file_name_vt = json.dumps(av_engines_json['data']['attributes']['meaningful_name'])
 		file_name_vt = str(file_name_vt)	
 		if file_name_vt:
@@ -166,9 +167,11 @@ def file_hash_vt(api_key):
 
 def website_vt(api_key):
 	website = input('Podaj strone do sprawdzenia : ')
+	website = repr(website).strip('"')
 	url = "https://www.virustotal.com/api/v3/urls"
 
 	payload = f"url={website}"
+	breakpoint()
 	headers = {
 	    "accept": "application/json",
 	    "x-apikey": api_key,
@@ -187,9 +190,9 @@ def website_vt(api_key):
 def website_info(api_key):
 	form_ver = 'URL'
 	website = input("Podaj strone : ")
+	website = repr(website).strip('"')
 	url_id = base64.urlsafe_b64encode(f"{website}".encode()).decode().strip("=")
 	url = f"https://www.virustotal.com/api/v3/urls/{url_id}"
-
 	headers = {
 	    "accept": "application/json",
 	    "x-apikey": api_key
@@ -197,7 +200,7 @@ def website_info(api_key):
 	response = requests.get(url, headers=headers)
 	try:	
 		av_engines_json, i_vendor = mal_ven_count(response, form_ver)
-		mal_info(av_engines_json, i_vendor)
+		mal_info(av_engines_json, i_vendor, form_ver)
 		###Timestamp
 		last_analysis_timestamp = json.dumps(av_engines_json['data']['attributes']['last_analysis_date'])
 		if last_analysis_timestamp:
@@ -226,7 +229,7 @@ def ip_addr_vt(api_key):
 	response = requests.get(url, headers=headers)
 	try:	
 		av_engines_json, i_vendor = mal_ven_count(response, form_ver)
-		mal_info(av_engines_json, i_vendor)
+		mal_info(av_engines_json, i_vendor, form_ver)
 		
 		info = json.dumps(av_engines_json['data']['attributes']['as_owner'], indent=4)
 		info = str(info)
@@ -246,6 +249,15 @@ def ip_addr_vt(api_key):
 	finally:
 		pass
 
+def file_to_hash():
+	file_path = input('Podaj sciezke do pliku aby wyliczyc jego hash : ')
+	file_path = str(file_path).strip('\x22\x27')
+	# if '\x22' or '\x27' in file_path:
+	# 	file_path = eval(file_path)
+	# else:
+	# 	pass	
+	file_hash = hash_md5(file_path)
+	print(file_hash)
 
 def hash_md5(file_path):
 	# BUF_SIZE = 65536   #64kB 
@@ -269,6 +281,7 @@ def main():
 		print('3. Sprawdz informacje na temat hashu pliku')
 		print('4. Sprawdz adres IP')
 		print('5. Weryfikacja pliku')
+		print('6. Wylicz hash dla pliku')
 		print('Aby wyjsc wcisnij "q"')
 		print('---------------------------------------------------')
 		answer = input('Wybierz opcje : ')
@@ -281,9 +294,41 @@ def main():
 		elif answer == '4':
 			ip_addr_vt(api_key)
 		elif answer == '5':
-			file_upload(api_key)		
+			file_upload(api_key)
+		elif answer == '6':
+			file_to_hash()			
 		elif answer == 'q':
-			break
+			print('''
+
+
+                                                                                
+                                   ./%@@@@@#/.                                  
+                          .@@@@@@@@@@@@@@@@@@@@@@@@@@@                          
+                      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                     
+                  &@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*                 
+               (@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@               
+             @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@(            
+           &@@@@@@@@@@@@@@@@@@,                   #@@@@@@@@@@@@@@@@@@*          
+          @@@@@@@@@@@@@@@@@@@                       @@@@@@@@@@@@@@@@@@@         
+        %@@@@@@@@@@@@@@@@@@@                         @@@@@@@@@@@@@@@@@@@        
+       &@@@@@@@@@@@@@@@@@@@(                         @@@@@@@@@@@@@@@@@@@@,      
+      /@@@@@@@@@@@@@@@@@@@@                          .@@@@@@@@@@@@@@@@@@@@      
+      @@@@@@@@@@@@@@@@                                    ,@@@@@@@@@@@@@@@@     
+     #@@@@@@@@@@@@/                                           @@@@@@@@@@@@@.    
+     @@@@@@@@@@@@@@@                                         @@@@@@@@@@@@@@&    
+     @@@@@@@@@@@@@@@@@@@#                               @@@@@@@@@@@@@@@@@@@@    
+     @@@@@@@@@@@@@@@@@@@@@@@                         @@@@@@@@@@@@@@@@@@@@@@&    
+     %@@@@@@@@@@@@@@@@@@@@@@#                       @@@@@@@@@@@@@@@@@@@@@@@.    
+      @@@@@@@@@@@@@@@@@@@@@@@,                     &@@@@@@@@@@@@@@@@@@@@@@@     
+      (@@@@@@@@@@@@@@@@@@@@%                         @@@@@@@@@@@@@@@@@@@@@      
+       &@@@@@@@@@@@@@@@@@@@@/                       @@@@@@@@@@@@@@@@@@@@@/      
+        @@@@@@@@@@@@@@@@@@@@@&                     @@@@@@@@@@@@@@@@@@@@@.       
+         .@@@@@@@@@@@#                                     %@@@@@@@@@@@         
+           @@@@/                                                 &@@@%          
+
+
+				''')
+			time.sleep(1.5)			
 			exit(0)
 		else:
 			print('zly wybor, aby wyjsc wcisnij "q"')
