@@ -7,12 +7,12 @@ from sys import exit
 from os import path
 import hashlib
 from datetime import datetime
-from charset_normalizer import md__mypyc 
+from charset_normalizer import md__mypyc
+import urllib.parse
 
 
 config = ConfigParser()
 config.read('config.ini')
-
 api_key = config.get('Config', 'api')
 
 
@@ -167,9 +167,10 @@ def file_hash_vt(api_key):
 
 def website_vt(api_key):
 	website = input('Podaj strone do sprawdzenia : ')
+	website_parsed = urllib.parse.quote(website)
 	url = "https://www.virustotal.com/api/v3/urls"
 
-	payload = f"url={website}"
+	payload = f"url={website_parsed}"
 	headers = {
 	    "accept": "application/json",
 	    "x-apikey": api_key,
